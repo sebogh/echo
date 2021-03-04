@@ -1211,3 +1211,31 @@ func TestEcho_StartServer(t *testing.T) {
 		})
 	}
 }
+
+func TestEchoShutdown2(t *testing.T) {
+
+	e := New()
+	e.HideBanner = true
+	e.HidePort = true
+
+	go func() {
+		s := &http.Server{Addr: ":8080"}
+		e.StartServer(s)
+	}()
+
+	// give the server some time to come up
+	time.Sleep(200 * time.Millisecond)
+
+	// query the server the server expecting a 404 but no error
+	client := &http.Client{}
+	_, err := client.Get("http://localhost:8080")
+	assert.NoError(t, err)
+
+	// close the server
+	e.Close()
+	e.Shutdown(stdContext.TODO())
+
+	// query again expect result connection refused error
+	_, err = client.Get("http://localhost:8080")
+	assert.Error(t, err)
+}
